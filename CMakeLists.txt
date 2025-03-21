@@ -1,9 +1,31 @@
 cmake_minimum_required(VERSION 3.22)
 project(soar
   VERSION 9.6.3
-  LANGUAGES CXX)
+  LANGUAGES CXX C)
 
-find_package(SQLite3 REQUIRED)
+# find_package(SQLite3 REQUIRED)
+
+add_library(SQLite3_objs OBJECT SQLite3/sqlite3.c)
+
+target_compile_definitions(SQLite3_objs INTERFACE  
+								   SQLITE_DQS=0
+								   SQLITE_MAX_EXPR_DEPTH=0
+								   SQLITE_DEFAULT_MEMSTATUS=0
+								   SQLITE_DEFAULT_SYNCHRONOUS=1
+								   SQLITE_DEFAULT_WAL_SYNCHRONOUS=1
+								   SQLITE_THREADSAFE=1
+								   SQLITE_DEFAULT_AUTOVACUUM=2
+								   SQLITE_OMIT_LOAD_EXTENSION=1
+								   SQLITE_ENABLE_MATH_FUNCTIONS=1
+								   SQLITE_TEMP_STORE=2
+								   SQLITE_ENABLE_FTS5=1
+								   SQLITE_ENABLE_MEMORY_MANAGEMENT=1)
+								   
+
+set_property(TARGET SQLite3_objs
+             PROPERTY POSITION_INDEPENDENT_CODE True
+			 PROPERTY C_STANDARD 11
+			 PROPERTY LINKER_LANGUAGE C)
 
 option(SYSTEM_INSTALL "Install to system directories" OFF)
 
@@ -15,13 +37,13 @@ endif()
 
 # Add your source files
 set(SOURCES
+  Core/CLI/CommandLineInterface.cxx
   Core/ClientSML/ClientSML.cxx
   Core/ConnectionSML/ConnectionSML.cxx
   Core/ElementXML/ElementXML.cxx
   Core/KernelSML/KernelSML.cxx
   Core/SoarKernel/SoarKernel.cxx
   Core/shared/shared.cxx
-  Core/CLI/CommandLineInterface.cxx
 )
 
 file(GLOB_RECURSE HEADERS
@@ -53,16 +75,42 @@ option(SVS "SVS Enabled" OFF)
 if(NOT SVS)
   message(STATUS "Soar: Disabling SVS")
   add_compile_definitions(NO_SVS)
+else()
+	if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR ${CMAKE_SYSTEM_NAME} STREQUAL "MSYS")
+		set(PLATFORM_SPEC windows)
+	elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" OR ${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
+		set(PLATFORM_SPEC osx)
+	else()
+		set(PLATFORM_SPEC posix)
+	endif()
+
+	file(GLOB_RECURSE svs_deps_sources "Core/SVS/ccd/*.c")
+	add_library(svs_deps_objs OBJECT ${svs_deps_sources})
+	target_include_directories(svs_deps_objs PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/ccd>)
+	set_property(TARGET svs_deps_objs
+				 PROPERTY POSITION_INDEPENDENT_CODE True
+				 PROPERTY C_STANDARD 11
+				 PROPERTY LINKER_LANGUAGE C)
+			 
+	add_library(${PROJECT_NAME}_static STATIC ${SOURCES} Core/SVS/SVS.cxx Core/SVS/src/${PLATFORM_SPEC}/platform_specific.cpp $<TARGET_OBJECTS:svs_deps_objs> $<TARGET_OBJECTS:SQLite3_objs>)
+	
+	target_include_directories(${PROJECT_NAME}_static PRIVATE 
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/eigen>
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/ccd>
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/src/${PLATFORM_SPEC}>)
+else()
+	add_library(${PROJECT_NAME}_static STATIC ${SOURCES} $<TARGET_OBJECTS:SQLite3_objs>)
 endif()
 
+
 # Add executable/library target
-add_library(${PROJECT_NAME}_static STATIC ${SOURCES})
 target_include_directories(${PROJECT_NAME}_static PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/CLI/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ClientSML/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ConnectionSML/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ElementXML/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/KernelSML/src>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SoarKernel/src/debug_code>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SoarKernel/src/decision_process>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SoarKernel/src/episodic_memory>
@@ -79,11 +127,13 @@ target_include_directories(${PROJECT_NAME}_static PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/shared>
   $<INSTALL_INTERFACE:include/soar>
 )
-target_link_libraries(${PROJECT_NAME}_static PUBLIC SQLite::SQLite3)
 
 set_target_properties(${PROJECT_NAME}_static
-  PROPERTIES
-  PUBLIC_HEADER "${HEADERS}")
+  PROPERTIES PUBLIC_HEADER "${HEADERS}"
+  PROPERTY POSITION_INDEPENDENT_CODE True
+  PROPERTY C_STANDARD 11
+  PROPERTY CXX_STANDARD 17
+  PROPERTY LINKER_LANGUAGE CXX)
 
 set(CXX_STANDARD_REQUIRED True)
 
@@ -112,6 +162,14 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
   else()
     message(WARNING "Debug flags for windows not set up.")
   endif()
+endif()
+
+if (MSVC)
+    # warning level 4
+    target_compile_options(${PROJECT_NAME}_static PRIVATE /D_USRDLL /D_CRT_SECURE_NO_DEPRECATE)
+else()
+    # additional warnings
+    target_compile_options(${PROJECT_NAME}_static PRIVATE -DDSTATIC_LINKED=1)
 endif()
 
 # This only sets up the install structure, but no installation happens yet.
