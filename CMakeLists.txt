@@ -75,6 +75,7 @@ option(SVS "SVS Enabled" OFF)
 if(NOT SVS)
   message(STATUS "Soar: Disabling SVS")
   add_compile_definitions(NO_SVS)
+  add_library(${PROJECT_NAME}_static STATIC ${SOURCES} $<TARGET_OBJECTS:SQLite3_objs>)
 else()
 	if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR ${CMAKE_SYSTEM_NAME} STREQUAL "MSYS")
 		set(PLATFORM_SPEC windows)
@@ -98,8 +99,6 @@ else()
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/eigen>
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/ccd>
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/src/${PLATFORM_SPEC}>)
-else()
-	add_library(${PROJECT_NAME}_static STATIC ${SOURCES} $<TARGET_OBJECTS:SQLite3_objs>)
 endif()
 
 
