@@ -75,7 +75,7 @@ option(SVS "SVS Enabled" OFF)
 if(NOT SVS)
   message(STATUS "Soar: Disabling SVS")
   add_compile_definitions(NO_SVS)
-  add_library(${PROJECT_NAME}_static STATIC ${SOURCES} $<TARGET_OBJECTS:SQLite3_objs>)
+  add_library(${PROJECT_NAME} SHARED ${SOURCES} $<TARGET_OBJECTS:SQLite3_objs>)
 else()
 	if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR ${CMAKE_SYSTEM_NAME} STREQUAL "MSYS")
 		set(PLATFORM_SPEC windows)
@@ -93,9 +93,9 @@ else()
 				 PROPERTY C_STANDARD 11
 				 PROPERTY LINKER_LANGUAGE C)
 			 
-	add_library(${PROJECT_NAME}_static STATIC ${SOURCES} Core/SVS/SVS.cxx Core/SVS/src/${PLATFORM_SPEC}/platform_specific.cpp $<TARGET_OBJECTS:svs_deps_objs> $<TARGET_OBJECTS:SQLite3_objs>)
+	add_library(${PROJECT_NAME} SHARED ${SOURCES} Core/SVS/SVS.cxx Core/SVS/src/${PLATFORM_SPEC}/platform_specific.cpp $<TARGET_OBJECTS:svs_deps_objs> $<TARGET_OBJECTS:SQLite3_objs>)
 	
-	target_include_directories(${PROJECT_NAME}_static PRIVATE 
+	target_include_directories(${PROJECT_NAME} PRIVATE 
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/eigen>
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/ccd>
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/src/${PLATFORM_SPEC}>)
@@ -103,7 +103,7 @@ endif()
 
 
 # Add executable/library target
-target_include_directories(${PROJECT_NAME}_static PUBLIC
+target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/CLI/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ClientSML/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ConnectionSML/src>
@@ -127,7 +127,7 @@ target_include_directories(${PROJECT_NAME}_static PUBLIC
   $<INSTALL_INTERFACE:include/soar>
 )
 
-set_target_properties(${PROJECT_NAME}_static
+set_target_properties(${PROJECT_NAME}
   PROPERTIES PUBLIC_HEADER "${HEADERS}"
   PROPERTY POSITION_INDEPENDENT_CODE True
   PROPERTY C_STANDARD 11
@@ -137,12 +137,12 @@ set_target_properties(${PROJECT_NAME}_static
 set(CXX_STANDARD_REQUIRED True)
 
 # Set the C++ standard for this and all downstream targets
-target_compile_features(${PROJECT_NAME}_static PUBLIC
+target_compile_features(${PROJECT_NAME} PUBLIC
   cxx_std_17
 )
 
 if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-  target_compile_options(${PROJECT_NAME}_static PRIVATE -Wall -Wpedantic)
+  target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wpedantic)
 
   if(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     if(ASAN)
@@ -165,14 +165,11 @@ endif()
 
 if (MSVC)
     # warning level 4
-    target_compile_options(${PROJECT_NAME}_static PRIVATE /D_USRDLL /D_CRT_SECURE_NO_DEPRECATE)
-else()
-    # additional warnings
-    target_compile_options(${PROJECT_NAME}_static PRIVATE -DDSTATIC_LINKED=1)
+    target_compile_options(${PROJECT_NAME} PRIVATE /D_USRDLL /D_CRT_SECURE_NO_DEPRECATE)
 endif()
 
 # This only sets up the install structure, but no installation happens yet.
-install(TARGETS ${PROJECT_NAME}_static
+install(TARGETS ${PROJECT_NAME}
   EXPORT SoarTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -206,7 +203,7 @@ export(EXPORT SoarTargets
   FILE "${CMAKE_CURRENT_BINARY_DIR}/SoarTargets.cmake"
 )
 
-add_library(soar::soar_static ALIAS soar_static)
+add_library(soar::soar ALIAS soar)
 
 include(CTest)
 add_subdirectory(SoarCLI)
