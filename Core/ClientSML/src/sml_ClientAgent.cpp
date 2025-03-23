@@ -58,9 +58,9 @@ namespace
             dynamic_library_load_unload_handler()
             {
 #ifdef _WIN32
-                HMODULE soarModule = GetModuleHandle("Soar.dll");
+                HMODULE soarModule = GetModuleHandleA("Soar.dll");
                 char* str = new char[256];
-                int libNameLength = GetModuleFileName(soarModule, str, 256);
+                int libNameLength = GetModuleFileNameA(soarModule, str, 256);
 
                 std::string path(str);
                 libraryPath = path.substr(0, path.find_last_of("\\"));
@@ -86,7 +86,7 @@ namespace sml
     struct DebuggerProcessInformation
     {
 #ifdef _WIN32
-        STARTUPINFO debuggerStartupInfo;
+        STARTUPINFOA debuggerStartupInfo;
         PROCESS_INFORMATION debuggerProcessInformation;
 #else // _WIN32
         pid_t debuggerPid;
@@ -1489,7 +1489,7 @@ bool Agent::SynchronizeOutputLink()
 bool isfile(const char* path)
 {
 #ifdef _WIN32
-    DWORD a = GetFileAttributes(path);
+    DWORD a = GetFileAttributesA(path);
     return a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY);
 #else
     struct stat st;
@@ -1579,7 +1579,7 @@ bool Agent::SpawnDebugger(int port, const char* jarpath)
         char buffer[4096 + 1];
 
 #ifdef _MSC_VER
-        if (!GetCurrentDirectory(4096, buffer)) {
+        if (!GetCurrentDirectoryA(4096, buffer)) {
             std::cerr << "SpawnDebugger: GetCurrentDirectory failed: " << GetLastError() << std::endl;
             return false;
         }
@@ -1668,7 +1668,7 @@ bool Agent::SpawnDebugger(int port, const char* jarpath)
     char* pathC = getenv("PATH");
     char buffer[4096 + 1];
 
-    GetCurrentDirectory(4096, buffer);
+    GetCurrentDirectoryA(4096, buffer);
 
     if (pathC)
     {
@@ -1703,7 +1703,7 @@ bool Agent::SpawnDebugger(int port, const char* jarpath)
 
     commandLine << "java.exe -Djava.library.path=\"" << path << "\" -jar \"" << p << "\" -remote -port " << port << " -agent \"" << this->GetAgentName() << "\"";
 
-    BOOL ret = CreateProcess(
+    BOOL ret = CreateProcessA(
                    0,
                    const_cast< LPSTR >(commandLine.str().c_str()),      // Command line
                    0,                              // Process handle not inheritable

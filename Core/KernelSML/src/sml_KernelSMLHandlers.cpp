@@ -102,7 +102,7 @@ void KernelSML::BuildCommandMap()
 bool fileExistsAndIsDir(const char* path)
 {
 #ifdef _WIN32
-    DWORD a = GetFileAttributes(path);
+    DWORD a = GetFileAttributesA(path);
     return a != INVALID_FILE_ATTRIBUTES && !(a & FILE_ATTRIBUTE_DIRECTORY);
 #else
     struct stat st;

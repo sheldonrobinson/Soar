@@ -31,7 +31,7 @@
 bool fileExists(const char* path)
 {
 #ifdef _WIN32
-    DWORD a = GetFileAttributes(path);
+    DWORD a = GetFileAttributesA(path);
     return a != INVALID_FILE_ATTRIBUTES;
 #else
     struct stat st;

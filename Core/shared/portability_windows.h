@@ -109,7 +109,7 @@ static inline long atomic_dec( volatile long *v )
 static inline int set_working_directory_to_executable_path()
 {
       char application_path[MAX_PATH];
-      unsigned int length = GetModuleFileName(0, application_path, MAX_PATH);
+      unsigned int length = GetModuleFileNameA(0, application_path, MAX_PATH);
 
       for(; length != 0; --length) {
             if(application_path[length] == '\\') {
@@ -123,7 +123,7 @@ static inline int set_working_directory_to_executable_path()
            return -1;
       }
 
-      length = SetCurrentDirectory(application_path);
+      length = SetCurrentDirectoryA(application_path);
       if(!length)
             fprintf(stderr, "Failed to set working directory.\n");
 

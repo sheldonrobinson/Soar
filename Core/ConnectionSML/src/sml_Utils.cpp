@@ -55,7 +55,7 @@ void sml::ReportSystemErrorMessage()
     char* message;
 
 #ifdef _WIN32
-    FormatMessage(
+    FormatMessageA(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
         0,
         error,
@@ -196,10 +196,10 @@ void sml::PrintDebugMethod(char const* pMethodName, char const* pStr)
     */
 
     // We add a newline which may be O/S specific.
-    OutputDebugString(pMethodName) ;
-    OutputDebugString(" ") ;
-    OutputDebugString(pStr) ;
-    OutputDebugString("\n") ;
+    OutputDebugStringA(pMethodName) ;
+    OutputDebugStringA(" ") ;
+    OutputDebugStringA(pStr) ;
+    OutputDebugStringA("\n") ;
 }
 
 void PrintDebugSimple(char const* pStr)
