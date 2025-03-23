@@ -10,8 +10,8 @@ target_compile_features(${EXEC_NAME} PUBLIC
     cxx_std_17
 )
 
-file(COPY ${CMAKE_SOURCE_DIR}/PerformanceTests/TestAgents/ DESTINATION ${CMAKE_BINARY_DIR}/PerformanceTests/)
-file(COPY ${CMAKE_SOURCE_DIR}/PerformanceTests/do_performance_test.sh DESTINATION ${CMAKE_BINARY_DIR}/PerformanceTests/)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/TestAgents/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/do_performance_test.sh DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 enable_testing()
 
