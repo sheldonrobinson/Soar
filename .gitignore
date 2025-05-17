@@ -531,3 +531,6 @@ temp_chunks.soar
 
 CMakeUserPresets.json
 Testing/*
+ConanPresets.json
+_CPack*/*
+soar-*

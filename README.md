@@ -26,9 +26,39 @@ Disclaimer: These are worst case tests.  Average performance is probably much hi
 
 ## Development
 
+<<<<<<< HEAD
 The Soar project builds with `scons`, but an alternative build based on `CMake`
 is under development. The following section refers to building with scons.
 For building with CMake refer to the [CMake section](#build-with-cmake).
+=======
+The Soar project builds with `scons`, see [build with scons](#build-with-scons),
+but an alternative build based on `CMake`, see
+[CMake section](#build-with-cmake), is under development.
+
+The following table provides a comparison of supported build features for Soar
+between both build systems.
+
+| Feature                           | Scons | CMake |
+| --------------------------------- | ----- | ----- |
+| Soar dynamic lib                  | ✅     | ✅     |
+| Soar static lib                   | ❌     | ✅     |
+| Soar CLI                          | ✅     | ✅     |
+| Unit tests                        | ✅     | ✅     |
+| Performance tests                 | ✅     | ✅     |
+| Exnternal lib test                | ✅     | ✅     |
+| SVS                               | ✅     | ❌     |
+| SWIG                              | ✅     | ❌     |
+| Python package soar-sml           | ✅     | ❌     |
+| Generate compile commands         | ✅     | ❌     |
+| Release                           | ✅     | ✅     |
+| Debug                             | ✅     | ✅     |
+| Debug with address sanitizer      | ❌     | ✅     |
+| Conan package manager integration | ❌     | ✅     |
+| MacOS                             | ✅     | ✅     |
+| Linux                             | ✅     | ✅     |
+| Windows                           | ✅     | ❌     |
+| Java builds (Debugger)            | ✅     | ❌     |
+>>>>>>> 5570aa0626d0dec6d68d34f1d9d2ebe44191eb53
 
 ### Prerequisites
 
@@ -59,9 +89,13 @@ To compile the extra SML wrapper libs, you will need the following:
 * Tcl (only needed for Tcl wrapper and TclSoarlib)
     * Mac: `brew install tcl-tk`
 
+### Build with Scons
+
 The project supports generating compile_commands.json, which can be used by e.g. VSCode with the C/C++ plugin to provide IntelliSense. To generate this file, run scons with the `cdb` target:
 
+```shell
    python3 scons/scons.py --scu --opt --verbose cdb
+```
 
 Note for M-series Mac users: you'll want to make sure you're compiling for ARM64, not x86_64. Sometimes users have Python installed in compatibility mode, leading to compiles for the wrong architecture. You can check which architecture your Python is built for using this:
 
@@ -86,7 +120,7 @@ If you want an optimized build instead:
     python3 scons/scons.py --opt --verbose all
 ```
 
-## Build with CMake
+### Build with CMake
 
 The following prerequisites must be available:
 
@@ -98,6 +132,35 @@ Once the dependencies are set up, the project can be built with the
 
 The VS Code extension for CMake should also work for triggering `build` and
 `install` commands, adding build problems to the warnings.
+
+The CMake build system for Soar includes a set of build presets setting defaults
+for several build options. See [CMakePrestes.json](./CMakePresets.json) for
+options. Using these presets requires the installation of debug and release
+dependencies by Conan, due to the resolution of dependencies via CMake toolchains:
+
+```shell
+conan install . --build=missing
+conan install . --build=missing -s build_type=Debug
+```
+
+Afterwards, different presets can be built with
+
+```shell
+cmake --preset Debug-test
+cmake --build --preset Debug-test
+```
+
+or predefined workflows can be run with the following command, running
+configure, build and test stages:
+
+```shell
+cmake --workflow --preset Debug-test-workflow
+```
+
+The default options are covered through presets `conan-release` and
+`conan-debug` provided by Conan. Extensions, like VS Code CMake tools,
+integrate well with these presets. A list of all presets is availble via `cmake
+--list-presets` or for workflows with `cmake --workflow --list-presets`.
 
 ## License
 

@@ -3,8 +3,8 @@ project(soar_cli
     VERSION 9.6.3
     LANGUAGES CXX)
 
-add_executable(soarcli soar_cli.cpp)
-target_link_libraries(soarcli soar::soar)
+add_executable(soar soar_cli.cpp)
+target_link_libraries(soar soar_lib)
 
-install(TARGETS soarcli
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+install(TARGETS soar
+    DESTINATION ${CMAKE_INSTALL_BINDIR})
