@@ -163,6 +163,15 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
   endif()
 endif()
 
+string(TOLOWER ${CMAKE_BUILD_TYPE} build_type)
+if (build_type STREQUAL "debug" OR build_type STREQUAL "relwithdebinfo")
+	if (MSVC)
+	  target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+	else ()
+	  target_compile_options(${PROJECT_NAME} PRIVATE -Wa,-mbig-obj)
+	endif ()
+endif()
+
 if (MSVC)
     # warning level 4
     target_compile_options(${PROJECT_NAME} PRIVATE /D_USRDLL /D_CRT_SECURE_NO_DEPRECATE)
