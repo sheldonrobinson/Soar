@@ -26,11 +26,6 @@ Disclaimer: These are worst case tests.  Average performance is probably much hi
 
 ## Development
 
-<<<<<<< HEAD
-The Soar project builds with `scons`, but an alternative build based on `CMake`
-is under development. The following section refers to building with scons.
-For building with CMake refer to the [CMake section](#build-with-cmake).
-=======
 The Soar project builds with `scons`, see [build with scons](#build-with-scons),
 but an alternative build based on `CMake`, see
 [CMake section](#build-with-cmake), is under development.
@@ -58,7 +53,6 @@ between both build systems.
 | Linux                             | ✅     | ✅     |
 | Windows                           | ✅     | ❌     |
 | Java builds (Debugger)            | ✅     | ❌     |
->>>>>>> 5570aa0626d0dec6d68d34f1d9d2ebe44191eb53
 
 ### Prerequisites
 
