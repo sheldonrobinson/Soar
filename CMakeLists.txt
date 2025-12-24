@@ -80,18 +80,18 @@ else()
   list(APPEND SOURCES ${svs_deps_sources} "Core/SVS/SVS.cxx")
 endif()
 
-set(TCLSOAR_INCLUDE_DIR)
-if(ENABLE_TCL)
- file(GLOB_RECURSE tclsoar_sources "Tcl/src/*.cpp")
- list(APPEND SOURCES ${tclsoar_sources})
-endif()
-
 # Add executable/library target
 if(BUILD_SHARED_LIBS)
   add_library(${PROJECT_NAME}_lib SHARED ${SOURCES})
+  if(MSVC)
+	target_compile_definitions(${PROJECT_NAME}_lib PRIVATE _USRDLL)
+  endif()
 else()
   add_library(${PROJECT_NAME}_lib STATIC ${SOURCES})
 endif()
+
+
+
 target_include_directories(${PROJECT_NAME}_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/CLI/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ClientSML/src>
@@ -113,12 +113,8 @@ target_include_directories(${PROJECT_NAME}_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SoarKernel/src/visualizer>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/shared>
   $<INSTALL_INTERFACE:include/soar>
-  ${TCLSOAR_INCLUDE_DIR}
 )
 
-if(ENABLE_TCL)
-	target_include_directories(${PROJECT_NAME}_lib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Tcl/src>)
-endif()
 
 if(SVS)
 	target_include_directories(${PROJECT_NAME}_lib PRIVATE 
@@ -166,6 +162,27 @@ if($<CONFIG:DEBUG>)
   else()
     message(WARNING "ASAN Debug flags for Windows not set up.")
   endif()
+endif()
+
+if(ENABLE_TCL)
+ file(GLOB_RECURSE tclsoar_sources "Tcl/src/*.cpp")
+ add_library(TclSoarLib SHARED ${tclsoar_sources})
+ if(MSVC)
+	target_compile_definitions(TclSoarLib PRIVATE _USRDLL)
+ endif()
+ target_link_libraries(TclSoarLib ${PROJECT_NAME}_lib)
+ target_include_directories(TclSoarLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Tcl/src>)
+ set_target_properties(TclSoarLib PROPERTIES
+        CXX_STANDARD 17
+		LINKER_LANGUAGE CXX
+		PUBLIC_HEADER "Tcl/src/TclSoarLib.h")
+
+  install(TARGETS TclSoarLib EXPORT TclSoarLibConfig
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCDIR})
+  install(FILES ${CMAKE_BINARY_DIR}/${SHAREDLIB_PREFIX}TclSoarLib.pdb DESTINATION ${CMAKE_INSTALL_BINDIR} OPTIONAL)
 endif()
 
 include(CMakePackageConfigHelpers)
