@@ -15,6 +15,9 @@ option(CLI "Build Soar command line interface" OFF)
 option(ASAN "Enable AddressSanitizer" OFF)
 option(SVS "SVS Enabled" OFF)
 
+# Explicit BUILD_SHARED_LIBS see https://cmake.org/cmake/help/latest/variable/BUILD_SHARED_LIBS.html#variable:BUILD_SHARED_LIBS
+option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   message(STATUS "Soar: Insallation prefix not set. Defaulting to ${CMAKE_INSTALL_PREFIX}")
   set_property(CACHE CMAKE_INSTALL_PREFIX PROPERTY VALUE "${CMAKE_CURRENT_SOURCE_DIR}/install")
@@ -74,11 +77,14 @@ else()
   endif()
   file(GLOB_RECURSE svs_deps_sources "Core/SVS/ccd/*.c")
   list(APPEND SOURCES ${svs_deps_sources} "Core/SVS/SVS.cxx")
-  
 endif()
 
 # Add executable/library target
-add_library(${PROJECT_NAME}_lib ${SOURCES})
+if(BUILD_SHARED_LIBS)
+  add_library(${PROJECT_NAME}_lib SHARED ${sources})
+else()
+  add_library(${PROJECT_NAME}_lib STATIC ${sources})
+endif()
 target_include_directories(${PROJECT_NAME}_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/CLI/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ClientSML/src>
