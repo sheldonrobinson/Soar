@@ -88,9 +88,9 @@ endif()
 
 # Add executable/library target
 if(BUILD_SHARED_LIBS)
-  add_library(${PROJECT_NAME}_lib SHARED ${sources})
+  add_library(${PROJECT_NAME}_lib SHARED ${SOURCES})
 else()
-  add_library(${PROJECT_NAME}_lib STATIC ${sources})
+  add_library(${PROJECT_NAME}_lib STATIC ${SOURCES})
 endif()
 target_include_directories(${PROJECT_NAME}_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/CLI/src>
