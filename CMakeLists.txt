@@ -64,6 +64,17 @@ file(GLOB_RECURSE HEADERS
 if(NOT SVS)
   message(STATUS "Soar: Disabling SVS")
   add_compile_definitions(NO_SVS)
+else()
+  if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR ${CMAKE_SYSTEM_NAME} STREQUAL "MSYS")
+	set(PLATFORM_SPEC windows)
+  elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" OR ${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
+	set(PLATFORM_SPEC osx)
+  else()
+	set(PLATFORM_SPEC posix)
+  endif()
+  file(GLOB_RECURSE svs_deps_sources "Core/SVS/ccd/*.c")
+  list(APPEND SOURCES ${svs_deps_sources} "Core/SVS/SVS.cxx")
+  
 endif()
 
 # Add executable/library target
@@ -90,12 +101,23 @@ target_include_directories(${PROJECT_NAME}_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/shared>
   $<INSTALL_INTERFACE:include/soar>
 )
+
+if(SVS)
+	target_include_directories(${PROJECT_NAME}_lib PRIVATE 
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/eigen>
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/ccd>
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/src/${PLATFORM_SPEC}>)
+endif()
+
 target_link_libraries(${PROJECT_NAME}_lib PUBLIC SQLite::SQLite3)
 
 set_target_properties(${PROJECT_NAME}_lib
   PROPERTIES
   PUBLIC_HEADER "${HEADERS}"
-  OUTPUT_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
+  OUTPUT_NAME "${PROJECT_NAME}-${PROJECT_VERSION}"
+  PROPERTY C_STANDARD 11
+  PROPERTY CXX_STANDARD 17
+  PROPERTY LINKER_LANGUAGE CXX)
 
 set(CXX_STANDARD_REQUIRED True)
 
