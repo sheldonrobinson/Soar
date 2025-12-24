@@ -10,6 +10,7 @@ find_package(SQLite3 REQUIRED)
 # FetchContent does not allow to set options for dependencies.
 option(BUILD_TESTS "Build tests" OFF)
 option(CLI "Build Soar command line interface" OFF)
+option(ENABLE_TCL "Build Soar with tcl bindings" OFF)
 
 # ASAN only works in debug mode.
 option(ASAN "Enable AddressSanitizer" OFF)
@@ -79,6 +80,12 @@ else()
   list(APPEND SOURCES ${svs_deps_sources} "Core/SVS/SVS.cxx")
 endif()
 
+set(TCLSOAR_INCLUDE_DIR)
+if(ENABLE_TCL)
+ file(GLOB_RECURSE tclsoar_sources "Tcl/src/*.cpp")
+ list(APPEND SOURCES ${tclsoar_sources})
+endif()
+
 # Add executable/library target
 if(BUILD_SHARED_LIBS)
   add_library(${PROJECT_NAME}_lib SHARED ${sources})
@@ -106,7 +113,12 @@ target_include_directories(${PROJECT_NAME}_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SoarKernel/src/visualizer>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/shared>
   $<INSTALL_INTERFACE:include/soar>
+  ${TCLSOAR_INCLUDE_DIR}
 )
+
+if(ENABLE_TCL)
+	target_include_directories(${PROJECT_NAME}_lib INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Tcl/src>)
+endif()
 
 if(SVS)
 	target_include_directories(${PROJECT_NAME}_lib PRIVATE 
@@ -121,9 +133,9 @@ set_target_properties(${PROJECT_NAME}_lib
   PROPERTIES
   PUBLIC_HEADER "${HEADERS}"
   OUTPUT_NAME "${PROJECT_NAME}-${PROJECT_VERSION}"
-  PROPERTY C_STANDARD 11
-  PROPERTY CXX_STANDARD 17
-  PROPERTY LINKER_LANGUAGE CXX)
+  C_STANDARD 11
+  CXX_STANDARD 17
+  LINKER_LANGUAGE CXX)
 
 set(CXX_STANDARD_REQUIRED True)
 
