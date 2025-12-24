@@ -165,7 +165,7 @@ if($<CONFIG:DEBUG>)
 endif()
 
 if(ENABLE_TCL)
- find_package(TCL REQUIRED)
+ # find_package(TCL REQUIRED)
  file(GLOB_RECURSE tclsoar_sources "Tcl/src/*.cpp")
  add_library(TclSoarLib SHARED ${tclsoar_sources})
  if(MSVC)
