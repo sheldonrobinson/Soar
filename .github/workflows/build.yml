@@ -58,7 +58,7 @@ jobs:
 
       - name: Setup tcl (macos)
         if: startsWith(matrix.os, 'macos')
-        run: brew install tcl-tk
+        run: brew install tcl-tk@8
 
       - name: Setup SWIG (macos)
         if: startsWith(matrix.os, 'macos')
@@ -140,7 +140,7 @@ jobs:
     runs-on: [windows-latest]
     env:
       TCL_HOME: c:\progra~1\tcl
-      TCL_DOWNLOAD_URL: https://kumisystems.dl.sourceforge.net/project/tcl/Tcl/8.6.13/tcl8613-src.zip
+      TCL_DOWNLOAD_URL: https://master.dl.sourceforge.net/project/tcl/Tcl/8.6.13/tcl8613-src.zip
       EXPECTED_TCL_HASH: 8999fcafab2d85473280e0bf6e390480496dfd53
 
     steps:
@@ -253,7 +253,7 @@ jobs:
 
       # reports JUnit test results as GitHub PR check.
       - name: publish test report
-        uses: mikepenz/action-junit-report@v3
+        uses: mikepenz/action-junit-report@v5
         # always run even if the previous step fails
         if: always()
         with:
@@ -283,8 +283,8 @@ jobs:
       fail-fast: true
       matrix:
         os: [
-            # 20.04 to preserve compatibility with testing stage
-            ubuntu-20.04,
+            # Note that this version must match what we use at the testing stage
+            ubuntu-24.04,
             # latest available X86_64 target
             macos-13,
             # latest is ARM
@@ -334,8 +334,8 @@ jobs:
         with:
           package-dir: Core/ClientSMLSWIG/Python/
 
-      - name: Ensure unit tests built (ubuntu-20.04)
-        if: matrix.os == 'ubuntu-20.04'
+      - name: Ensure unit tests built (ubuntu-24.04)
+        if: matrix.os == 'ubuntu-24.04'
         # On Ubuntu, we run cibuildwheel inside docker containers, which don't retain the outputs.
         # However, we want out/SoarUnitTests/ to be availible for future tests, so we build it again here.
         run: python scons/scons.py tests
@@ -362,6 +362,9 @@ jobs:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
 
+      - name: Identify dirty files
+        run: git diff
+
   test_python:
     name: Test wheel on all python versions
     runs-on: ${{ matrix.os }}
@@ -369,22 +372,20 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          # linux target which supports all python versions we want to install for
-          - ubuntu-20.04
+          # The Linux target has to be chosen so that we have support for all python versions we want to install for
+          - ubuntu-24.04
             # latest available X86_64 target
           - macos-13
             # latest is ARM
           - macos-latest
           - windows-latest
         python-minor:
-          - 5
-          - 6
-          - 7
           - 8
           - 9
           - 10
           - 11
           - 12
+          - 13
 
         # for macos-latest, we can't use python 3.5 - 3.7
         exclude:

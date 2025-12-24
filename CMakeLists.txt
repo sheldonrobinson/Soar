@@ -1,27 +1,36 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.23)
 project(soar
   VERSION 9.6.3
-  LANGUAGES CXX C)
+  LANGUAGES CXX)
 
 find_package(SQLite3 REQUIRED)
 
-option(SYSTEM_INSTALL "Install to system directories" OFF)
+# All options should be turned off by default to avoid building unnecessary
+# components in downstream projects relying on cmake's FetchContent module.
+# FetchContent does not allow to set options for dependencies.
+option(BUILD_TESTS "Build tests" OFF)
+option(CLI "Build Soar command line interface" OFF)
 
-if(SYSTEM_INSTALL)
-    include(GNUInstallDirs)
-else()
-    set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/install" CACHE PATH "Installation Directory" FORCE)
+# ASAN only works in debug mode.
+option(ASAN "Enable AddressSanitizer" OFF)
+option(SVS "SVS Enabled" OFF)
+
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  message(STATUS "Soar: Insallation prefix not set. Defaulting to ${CMAKE_INSTALL_PREFIX}")
+  set_property(CACHE CMAKE_INSTALL_PREFIX PROPERTY VALUE "${CMAKE_CURRENT_SOURCE_DIR}/install")
 endif()
+
+include(GNUInstallDirs)
 
 # Add your source files
 set(SOURCES
-  Core/CLI/CommandLineInterface.cxx
   Core/ClientSML/ClientSML.cxx
   Core/ConnectionSML/ConnectionSML.cxx
   Core/ElementXML/ElementXML.cxx
   Core/KernelSML/KernelSML.cxx
   Core/SoarKernel/SoarKernel.cxx
   Core/shared/shared.cxx
+  Core/CLI/CommandLineInterface.cxx
 )
 
 file(GLOB_RECURSE HEADERS
@@ -43,51 +52,28 @@ file(GLOB_RECURSE HEADERS
   "Core/SoarKernel/src/shared/*.h"
   "Core/SoarKernel/src/soar_representation/*.h"
   "Core/SoarKernel/src/visualizer/*.h"
-  "Core/shared/*.h"
+  "Core/shared/Export.h"
+  "Core/shared/build_time_date.h"
+  "Core/shared/soarversion.h"
+  "Core/shared/tokenizer.h"
+  "Core/shared/soar_TraceNames.h"
+  "Core/shared/portability.h"
+  "Core/shared/portability_posix.h"
 )
-
-# ASAN only works in debug mode.
-option(ASAN "Enable AddressSanitizer" OFF)
-option(SVS "SVS Enabled" OFF)
 
 if(NOT SVS)
   message(STATUS "Soar: Disabling SVS")
   add_compile_definitions(NO_SVS)
-  add_library(${PROJECT_NAME} SHARED ${SOURCES})
-else()
-	if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR ${CMAKE_SYSTEM_NAME} STREQUAL "MSYS")
-		set(PLATFORM_SPEC windows)
-	elseif(${CMAKE_SYSTEM_NAME} STREQUAL "Darwin" OR ${CMAKE_SYSTEM_NAME} STREQUAL "iOS")
-		set(PLATFORM_SPEC osx)
-	else()
-		set(PLATFORM_SPEC posix)
-	endif()
-
-	file(GLOB_RECURSE svs_deps_sources "Core/SVS/ccd/*.c")
-	add_library(svs_deps_objs OBJECT ${svs_deps_sources})
-	target_include_directories(svs_deps_objs PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/ccd>)
-	set_property(TARGET svs_deps_objs
-				 PROPERTY POSITION_INDEPENDENT_CODE True
-				 PROPERTY C_STANDARD 11
-				 PROPERTY LINKER_LANGUAGE C)
-			 
-	add_library(${PROJECT_NAME} SHARED ${SOURCES} Core/SVS/SVS.cxx Core/SVS/src/${PLATFORM_SPEC}/platform_specific.cpp $<TARGET_OBJECTS:svs_deps_objs> $<TARGET_OBJECTS:SQLite3_objs>)
-	
-	target_include_directories(${PROJECT_NAME} PRIVATE 
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/eigen>
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/ccd>
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/src/${PLATFORM_SPEC}>)
 endif()
 
-
 # Add executable/library target
-target_include_directories(${PROJECT_NAME} PUBLIC
+add_library(${PROJECT_NAME}_lib ${SOURCES})
+target_include_directories(${PROJECT_NAME}_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/CLI/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ClientSML/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ConnectionSML/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ElementXML/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/KernelSML/src>
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SVS/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SoarKernel/src/debug_code>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SoarKernel/src/decision_process>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/SoarKernel/src/episodic_memory>
@@ -104,23 +90,24 @@ target_include_directories(${PROJECT_NAME} PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/shared>
   $<INSTALL_INTERFACE:include/soar>
 )
+target_link_libraries(${PROJECT_NAME}_lib PUBLIC SQLite::SQLite3)
 
-set_target_properties(${PROJECT_NAME}
-  PROPERTIES PUBLIC_HEADER "${HEADERS}"
-  PROPERTY POSITION_INDEPENDENT_CODE True
-  PROPERTY C_STANDARD 11
-  PROPERTY CXX_STANDARD 17
-  PROPERTY LINKER_LANGUAGE CXX)
+set_target_properties(${PROJECT_NAME}_lib
+  PROPERTIES
+  PUBLIC_HEADER "${HEADERS}"
+  OUTPUT_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
 
 set(CXX_STANDARD_REQUIRED True)
 
 # Set the C++ standard for this and all downstream targets
-target_compile_features(${PROJECT_NAME} PUBLIC
+target_compile_features(${PROJECT_NAME}_lib PUBLIC
   cxx_std_17
 )
 
-if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-  target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wpedantic)
+if($<CONFIG:DEBUG>)
+  target_compile_options(${PROJECT_NAME}_lib PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU>: -Wall -Wpedantic>)
+
+  target_compile_options(${PROJECT_NAME}_lib PRIVATE $<$<CXX_COMPILER_ID:MSVC>: /Wall /permissive>)
 
   if(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     if(ASAN)
@@ -137,17 +124,19 @@ if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
       message(WARNING "clang-tidy not found!")
     endif()
   else()
-    message(WARNING "Debug flags for windows not set up.")
+    message(WARNING "ASAN Debug flags for Windows not set up.")
   endif()
 endif()
 
-if (MSVC)
-    # warning level 4
-    target_compile_options(${PROJECT_NAME} PRIVATE /D_USRDLL /D_CRT_SECURE_NO_DEPRECATE)
-endif()
+include(CMakePackageConfigHelpers)
+
+write_basic_package_version_file(
+  "${CMAKE_CURRENT_BINARY_DIR}/soarConfigVersion.cmake"
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY SameMajorVersion)
 
 # This only sets up the install structure, but no installation happens yet.
-install(TARGETS ${PROJECT_NAME}
+install(TARGETS ${PROJECT_NAME}_lib
   EXPORT SoarTargets
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -167,23 +156,48 @@ install(EXPORT SoarTargets
 include(CMakePackageConfigHelpers)
 configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
   "${CMAKE_CURRENT_BINARY_DIR}/soarConfig.cmake"
-  INSTALL_DESTINATION "lib/cmake/soar"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/soar"
   NO_SET_AND_CHECK_MACRO
   NO_CHECK_REQUIRED_COMPONENTS_MACRO
 )
 
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/soarConfig.cmake
-  DESTINATION lib/cmake/soar
+  ${CMAKE_CURRENT_BINARY_DIR}/soarConfigVersion.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/soar
 )
 
 export(EXPORT SoarTargets
   FILE "${CMAKE_CURRENT_BINARY_DIR}/SoarTargets.cmake"
 )
 
-add_library(soar::soar ALIAS soar)
+add_library(soar::soar_lib ALIAS ${PROJECT_NAME}_lib)
 
-include(CTest)
-add_subdirectory(SoarCLI)
-add_subdirectory(PerformanceTests)
-add_subdirectory(UnitTests)
+if(CLI)
+  message(STATUS "Soar: Building CLI")
+  add_subdirectory(SoarCLI)
+endif()
+
+if(BUILD_TESTS)
+  message(STATUS "Soar: Building tests")
+  include(CTest)
+  add_subdirectory(PerformanceTests)
+  add_subdirectory(UnitTests)
+endif()
+
+# Set CPack variables
+set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Soar is a cognitive architecture for developing systems that exhibit intelligent behavior.")
+set(CPACK_PACKAGE_CONTACT "soar-admin@umich.edu")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}-Source")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.md")
+set(CPACK_PACKAGE_VENDOR "University of Michigan Soar Group")
+list(APPEND CPACK_GENERATOR "TGZ")
+
+if(UNIX AND NOT APPLE)
+  list(APPEND CPACK_GENERATOR "DEB")
+  set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+endif()
+
+# Include CPack module - MUST be included last!
+include(CPack)

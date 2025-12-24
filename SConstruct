@@ -26,7 +26,7 @@ from build_support.tcl import prepare_for_compiling_with_tcl
 
 join = os.path.join
 
-SOAR_VERSION = "9.6.4a1"
+SOAR_VERSION = "9.6.4"
 CPP_STD_VERSION = "c++17"
 
 soarversionFile = open('soarversion', 'w')
@@ -189,20 +189,6 @@ env.AddMethod(prepare_for_compiling_with_tcl, 'PrepareForCompilingWithTcl')
 env.Tool('compilation_db')
 compile_db_target = env.CompilationDatabase()
 env.Alias(COMPILE_DB_ALIAS, compile_db_target)
-
-# This creates a file for cli_version.cpp to source.  For optimized builds, this guarantees
-# that the build date will be correct in every build.  (Turned off for debug, b/c it was adding
-# extra compilation time.  (for some reason, this will build it the first two times you compile after
-# it exists.)
-
-if ((env['DEBUG'] == None) or (env['DEBUG'] == False) or (FindFile('build_time_date.h', 'Core/shared/') == None)):
-    cli_version_dep = open('Core/shared/build_time_date.h', 'w')
-    print("const char* kTimestamp = __TIME__;", file=cli_version_dep)
-    print("const char* kDatestamp = __DATE__;", file=cli_version_dep)
-    print("//* Last build of Soar " + SOAR_VERSION + " occurred at " + time.ctime(time.time()) + " *//", file=cli_version_dep)
-    cli_version_dep.close()
-else:
-    print("Build time stamp file was not built because this is a debug build.")
 
 if GetOption('cc') != None:
     env.Replace(CC=GetOption('cc'))
