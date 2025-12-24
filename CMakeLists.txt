@@ -3,29 +3,7 @@ project(soar
   VERSION 9.6.3
   LANGUAGES CXX C)
 
-# find_package(SQLite3 REQUIRED)
-
-add_library(SQLite3_objs OBJECT SQLite3/sqlite3.c)
-
-target_compile_definitions(SQLite3_objs INTERFACE  
-								   SQLITE_DQS=0
-								   SQLITE_MAX_EXPR_DEPTH=0
-								   SQLITE_DEFAULT_MEMSTATUS=0
-								   SQLITE_DEFAULT_SYNCHRONOUS=1
-								   SQLITE_DEFAULT_WAL_SYNCHRONOUS=1
-								   SQLITE_THREADSAFE=1
-								   SQLITE_DEFAULT_AUTOVACUUM=2
-								   SQLITE_OMIT_LOAD_EXTENSION=1
-								   SQLITE_ENABLE_MATH_FUNCTIONS=1
-								   SQLITE_TEMP_STORE=2
-								   SQLITE_ENABLE_FTS5=1
-								   SQLITE_ENABLE_MEMORY_MANAGEMENT=1)
-								   
-
-set_property(TARGET SQLite3_objs
-             PROPERTY POSITION_INDEPENDENT_CODE True
-			 PROPERTY C_STANDARD 11
-			 PROPERTY LINKER_LANGUAGE C)
+find_package(SQLite3 REQUIRED)
 
 option(SYSTEM_INSTALL "Install to system directories" OFF)
 
@@ -75,7 +53,7 @@ option(SVS "SVS Enabled" OFF)
 if(NOT SVS)
   message(STATUS "Soar: Disabling SVS")
   add_compile_definitions(NO_SVS)
-  add_library(${PROJECT_NAME} SHARED ${SOURCES} $<TARGET_OBJECTS:SQLite3_objs>)
+  add_library(${PROJECT_NAME} SHARED ${SOURCES})
 else()
 	if(${CMAKE_SYSTEM_NAME} STREQUAL "Windows" OR ${CMAKE_SYSTEM_NAME} STREQUAL "MSYS")
 		set(PLATFORM_SPEC windows)
