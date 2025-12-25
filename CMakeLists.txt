@@ -165,14 +165,16 @@ if($<CONFIG:DEBUG>)
 endif()
 
 if(ENABLE_TCL)
- # find_package(TCL REQUIRED)
+ if (NOT DEFINED TCL_LIBRARY OR NOT DEFINED TCL_INCLUDE_PATH)
+	find_package(TCL REQUIRED)
+ endif()
  file(GLOB_RECURSE tclsoar_sources "Tcl/src/*.cpp")
  add_library(TclSoarLib SHARED ${tclsoar_sources})
  if(MSVC)
 	target_compile_definitions(TclSoarLib PRIVATE _USRDLL)
  endif()
- target_link_libraries(TclSoarLib ${PROJECT_NAME}_lib)
- target_include_directories(TclSoarLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Tcl/src>)
+ target_link_libraries(TclSoarLib ${PROJECT_NAME}_lib ${TCL_LIBRARY})
+ target_include_directories(TclSoarLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Tcl/src> ${TCL_INCLUDE_PATH})
  set_target_properties(TclSoarLib PROPERTIES
         CXX_STANDARD 17
 		LINKER_LANGUAGE CXX
