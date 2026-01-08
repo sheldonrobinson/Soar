@@ -140,7 +140,7 @@ target_compile_features(${PROJECT_NAME}_lib PUBLIC
   cxx_std_17
 )
 
-if($<CONFIG:DEBUG>)
+if($<CONFIG:Debug>)
   target_compile_options(${PROJECT_NAME}_lib PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU>: -Wall -Wpedantic -Wa,-mbig-obj>)
 
   target_compile_options(${PROJECT_NAME}_lib PRIVATE $<$<CXX_COMPILER_ID:MSVC>: /Wall /permissive /bigobj>)
