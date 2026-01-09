@@ -140,11 +140,16 @@ target_compile_features(${PROJECT_NAME}_lib PUBLIC
   cxx_std_17
 )
 
+
+
+ if (MSVC)
+  add_compile_options($<$<CONFIG:Debug>:/bigobj>)
+else ()
+  add_compile_options($<$<CONFIG:Debug>:-Wa,-mbig-obj>)
+endif ()
 if($<CONFIG:Debug>)
-  target_compile_options(${PROJECT_NAME}_lib PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU>: -Wall -Wpedantic -Wa,-mbig-obj>)
-
-  target_compile_options(${PROJECT_NAME}_lib PRIVATE $<$<CXX_COMPILER_ID:MSVC>: /Wall /permissive /bigobj>)
-
+  target_compile_options(${PROJECT_NAME}_lib PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU>: -Wall -Wpedantic>)
+  target_compile_options(${PROJECT_NAME}_lib PRIVATE $<$<CXX_COMPILER_ID:MSVC>: /Wall /permissive>)
   if(NOT ${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     if(ASAN)
       message(STATUS "Soar: Enabling AddressSanitizer")
