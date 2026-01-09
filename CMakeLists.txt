@@ -143,9 +143,9 @@ target_compile_features(${PROJECT_NAME}_lib PUBLIC
 
 
  if (MSVC)
-  add_compile_options($<$<CONFIG:Debug>:/bigobj>)
+  add_compile_options(/bigobj)
 else ()
-  add_compile_options($<$<CONFIG:Debug>:-Wa,-mbig-obj>)
+  add_compile_options(-Wa,-mbig-obj)
 endif ()
 if($<CONFIG:Debug>)
   target_compile_options(${PROJECT_NAME}_lib PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU>: -Wall -Wpedantic>)
