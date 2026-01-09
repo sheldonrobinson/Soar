@@ -90,8 +90,6 @@ else()
   add_library(${PROJECT_NAME}_lib STATIC ${SOURCES})
 endif()
 
-
-
 target_include_directories(${PROJECT_NAME}_lib PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/CLI/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Core/ClientSML/src>
@@ -143,9 +141,9 @@ target_compile_features(${PROJECT_NAME}_lib PUBLIC
 
 
  if (MSVC)
-  add_compile_options(/bigobj)
+  target_compile_options(${PROJECT_NAME}_lib PRIVATE /bigobj)
 else ()
-  add_compile_options(-Wa,-mbig-obj)
+  target_compile_options(${PROJECT_NAME}_lib PRIVATE -Wa,-mbig-obj)
 endif ()
 if($<CONFIG:Debug>)
   target_compile_options(${PROJECT_NAME}_lib PRIVATE $<$<CXX_COMPILER_ID:Clang,AppleClang,GNU>: -Wall -Wpedantic>)
